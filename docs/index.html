@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    #bookmarklet {
+        box-sizing: border-box;
+        width: calc(100% - 1rem);
+        height: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        background-color: #f6f8fa;
+        padding: 0.5rem;
+        margin: 0.5rem;
+    }
+
+    button {
+        background-color: #1f883d;
+        border-color: transparent;
+        color: white;
+        border-radius: 0.375rem;
+        padding: 0.2rem;
+    }
+
+    .content {
+        border: 0.05rem solid;
+        border-color: lightgray;
+        border-radius: 0.375rem;
+        padding: 0.2rem;
+        margin: 0.2rem;
+    }
+
+    th {
+        text-align: right;
+    }
+</style>
+<title>to 青空文庫テキスト - bookmarklet</title>
+<h1> to 青空文庫テキスト - bookmarklet</h1>
+<div class="content">
+    <h4>bookmarklet</h4>
+    <select id="bookmarklstSite"></select>
+    <button id="copyBookmarklet">Copy</button>
+    <div id="bookmarklet"></div>
+    <script>
+        const bookmarkletList = ['narou.js'];
+        const bookmarklstSite = document.getElementById("bookmarklstSite");
+        const bookmarklet = document.getElementById("bookmarklet");
+        for (const s of bookmarkletList) {
+            const elOption = document.createElement("option");
+            elOption.value = s;
+            elOption.textContent = s;
+            bookmarklstSite.appendChild(elOption);
+        }
+        const changeBookmarklet = t => {
+            bookmarklet.textContent = `javascript:(function(d,s,g){s=d.createElement('script');s.src='${URL.parse(".", document.location.href)}js/${t}';d.body.appendChild(s);})(document)`;
+        }
+        bookmarklstSite.addEventListener("change", e => changeBookmarklet(e.target.value));
+        document.getElementById("copyBookmarklet").addEventListener("click", _ => {
+            navigator.clipboard.writeText(bookmarklet.textContent);
+            alert("bookmarkletをコピーしました")
+        });
+        bookmarklstSite.selectedIndex = 0;
+        changeBookmarklet(bookmarklstSite.value); 
+    </script>
+    <div>
+        <h4>サポート対象ブラウザ バージョン</h4>
+        createWritableを使用しているため、iOSは26以上が必要となります。
+        <table>
+            <tr>
+                <th>Chrome
+                <td>86
+            <tr>
+                <th>Edge
+                <td>86
+            <tr>
+                <th>Firefox
+                <td>111
+            <tr>
+                <th>Opera
+                <td>72
+            <tr>
+                <th>Safari
+                <td>26
+            <tr>
+                <th>Chrome Android
+                <td>109
+            <tr>
+                <th>Firefox for Android
+                <td>111
+            <tr>
+                <th>Opera Android
+                <td>74
+            <tr>
+                <th>Safari on iOS
+                <td>26
+            <tr>
+                <th>Samsung Internet
+                <td>21
+            <tr>
+                <th>WebView Android
+                <td>109
+            <tr>
+                <th>WebView on iOS
+                <td>26
+        </table>
+    </div>
+</div>
+<div class="content">
+    <h4>登録方法</h4>
+    <ol>
+        <li>Copyボタン押下でクリップボードにbookmarkletをコピー</li>
+        <li>ブックマークの追加
+            <div>ブックマークの名前の指定</div>
+            <div>小説用 bookmarkletとわかる名前(「なろうto青空」 など)を指定</div>
+            <div>※このサイトがブックマークに追加されますが後でアドレスを変更するのでそのまま登録します。</div>
+        </li>
+        <li>ブックマークの編集
+            <div>アドレスを削除し、コピーしておいたbookmarkletを貼り付けます。</div>
+            <div>この時、最初の「javascript:」がコピーされない場合があるのでその際は、自分で入力します。</div>
+        </li>
+    </ol>
+
+    <h4>bookmarkletの使い方</h4>
+    <ol>
+        <li>小説サイトに移動
+            <div>https://ncode.syosetu.com 又は、 https://novel18.syosetu.com</div>
+        </li>
+        <li>登録したブックマークを選択</li>
+        <li>to Aozora Textが表示される</li>
+    </ol>
+
+    <h4>to Aozora Text 使い方</h4>
+    <ol>
+        <li>小説の追加
+            <div>Addボタンを押下</div>
+            <ul>
+                <li>Nコードを入力 ※デフォルトで開いている小説ページのNコードが設定されます。</li>
+                <li>登録ボタンを押下でお気に入り管理に追加されます。</li>
+            </ul>
+        </li>
+        <li>更新状況を確認
+            <div>Updateボタンを押下すると最新の情報にキストファイルを更新します。</div>
+        </li>
+        <li>小説の削除
+            <ul>
+                <li>削除したい小説の左にあるチェックボックス選択</li>
+                <li>Removeボタンを押下で選択した小説が削除されます。</li>
+            </ul>
+        </li>
+    </ol>
+</div>
+
+</html>
