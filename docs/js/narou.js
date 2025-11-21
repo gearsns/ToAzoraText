@@ -414,7 +414,10 @@
             border-color: #dad3c8;
             padding: 10px;
         }
-        .NovelListBox td:nth-child(n+5):nth-child(-n+6) {
+        .NovelListBox td:nth-child(n+4) {
+            min-width: 30rem;
+        }
+        .NovelListBox td:nth-child(n+5) {
             min-width: 15rem;
         }
         a, a:visited {
