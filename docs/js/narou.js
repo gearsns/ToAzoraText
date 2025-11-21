@@ -92,6 +92,7 @@
         return subtitles;
     };
     let fetchAbortController = null;
+    const isAbortError = error => error === "cancel" || error?.name === "AbortError";
     const fetchDocument = async url => {
         clearErrorMessage();
         const options = { credentials: 'include' };
@@ -303,7 +304,7 @@
     `;
     const style = document.createElement('style');
     style.textContent = `
-        table, button, input {
+        table, input {
             margin: 2px; border: 1px solid gray; padding: 2px;
         }
         #Main {
@@ -448,6 +449,18 @@
     `;
     shadow.appendChild(style);
     document.documentElement.style.overflowY = "hidden";
+    const elNovelListBaseStyle = document.getElementById("NovelListBaseStyle");
+    if (elNovelListBaseStyle){
+        elNovelListBaseStyle.parentNode.removeChild(elNovelListBaseStyle);
+    }
+    const baseStyle = document.createElement('style');
+    baseStyle.id = "NovelListBaseStyle";
+    baseStyle.textContent = `
+    ins, #geniee_overlay_outer, .c-ad {
+        display: none !important;
+    }
+    `;
+    document.head.appendChild(baseStyle);
     //
     const NovelList = [];
     const rebuildNovelList = async _ => {
@@ -582,11 +595,9 @@
             await refreshNovelList();
         } catch(error) {
             hideLoading();
-            if (error === "cancel"){
-                elError.textContent = `処理を中断しました。`;
-            } else {
-                elError.textContent = `${ncode}の登録中にエラーが発生しました。${error}`;
-            }
+            elError.textContent = isAbortError(error)
+                ? `処理を中断しました。`
+                : `${ncode}の登録中にエラーが発生しました。${error}`;
         }
     });
     // Update
@@ -615,11 +626,9 @@
                 }
             };
         } catch(error){
-            if (error === "cancel"){
-                setErrorMessage(`処理を中断しました。`);
-            } else {
-                setErrorMessage(`エラーが発生しました。`);
-            }
+            setErrorMessage(isAbortError(error)
+                ? `処理を中断しました。`
+                : `エラーが発生しました。`);
         }
         hideLoading();
     });
