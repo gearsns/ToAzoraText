@@ -1,86 +1,72 @@
 (async function () {
-    if (!(["https://ncode.syosetu.com","https://novel18.syosetu.com"].includes(document.location.origin))) {
+    if (!(["https://kakuyomu.jp"].includes(document.location.origin))) {
         return;
     }
-    const urlCodeMatch = url => url.match(/.*syosetu.*\/(?<ncode>n[A-Za-z0-9]+)/);
-    const getNcodeUrl = ncode => `${TopUrl}/${ncode}/`
-    // subtitles取得
-    const getSubtitles = doc => {
-        const subtitles = [];
-        let chapter = "";
-        for (const elSublist of doc.querySelectorAll(".p-eplist > .p-eplist__sublist, .p-eplist > .p-eplist__chapter-title")) {
-            if (elSublist.classList.contains("p-eplist__sublist")) {
-                const item = {};
-                // サブタイトルとリンク取得
-                const elSubtitle = elSublist.querySelector(".p-eplist__subtitle");
-                if (elSubtitle) {
-                    item.subtitle = elSubtitle.textContent.trim();
-                    item.href = elSubtitle.href.replace(/https:\/\/.*\.syosetu\.com/, "");
-                    item.index = item.href.replace(/\/.*\/(.*)\//, "$1");
-                }
-                // 作成日と更新日取得
-                const elCreateDate = elSublist.querySelector(".p-eplist__update");
-                if (elCreateDate) {
-                    const elUpdateDate = elCreateDate.querySelector("span");
-                    if (elUpdateDate) {
-                        item.subupdate = elUpdateDate.title.replace(/ 改稿/, "");
-                    }
-                    item.subdate = elCreateDate.textContent.trim().split(/\n/)[0];
-                }
-                item.chapter = chapter; // 現在の章情報を追加
-                subtitles.push(item);
-            } else {
-                chapter = elSublist.textContent.trim(); // 章タイトルを更新
-            }
-        }
-        return subtitles;
-    };
+    const urlCodeMatch = url => url.match(/.*kakuyomu.jp\/works\/(?<ncode>[A-Za-z0-9]+)/);
+    const getNcodeUrl = ncode => `https://kakuyomu.jp/works/${ncode}`
     // TOC作成
     const createToc = async (basedir, ncode) => {
-        const infoDocument = await fetchDocument(`${basedir}/novelview/infotop/ncode/${ncode}`);
-        const param = {};
-        let key = "";
-        for(const el of infoDocument.querySelectorAll(".p-infotop-data__title, .p-infotop-data__value")){
-            if (el.classList.contains("p-infotop-data__title")){
-                key = el.textContent.trim();
-            } else {
-                param[key] = el.textContent.trim();
+        const url = `${basedir}/works/${ncode}`;
+        const topDocument = await fetchDocument(url);
+        const html = topDocument.body.innerHTML;
+        const regexp  = /(\<script[\s\S]*?\>)([\s\S]*?)\<\/script\>/ig;
+        let m = null;
+        let script_data = null;
+        while((m = regexp.exec(html)) !== null) {
+            if(m[1].match(/__NEXT_DATA__/)){
+                script_data = m[2];
+                break;
             }
         }
-        const url = `${basedir}/${ncode}`;
-        const topDocument = await fetchDocument(url);
         const toc = {
-            title: topDocument.querySelector(".p-novel__title")?.textContent ?? "",
-            author: param["作者名"],
+            title: "",
+            author: "",
             toc_url: url,
-            story: param["あらすじ"],
-            subtitles: getSubtitles(topDocument)
+            story: "",
+            subtitles: []
         };
-        // 最終ページ取得
-        const lastPageElement = topDocument.querySelector(".c-pager__item--last");
-        if (lastPageElement) {
-            const lastPage = lastPageElement ? parseInt(lastPageElement.href.match(/\?p=(\d+)/)?.[1] || "1", 10) : 1;
-            // 2ページ目以降を取得
-            for (let page = 2; page <= lastPage; page++) {
-                await sleep(100);
-                const pageDocument = await fetchDocument(`${url}/?p=${page}`);
-                toc.subtitles.push(...getSubtitles(pageDocument));
-            }
-        } else if (toc.subtitles.length === 0) {
-            const novelBodyElement = topDocument.querySelector(".p-novel__body")
-            if (novelBodyElement){
-                toc.subtitles.push({
-                    subtitle: "",
-                    href: `/${ncode}`,
-                    subdate: param["掲載日"],
-                    subupdate: param["最終更新日"]||param["最新掲載日"]||param["最終掲載日"],
-                    index: 1,
-                });
+        if(script_data) {
+            try {
+                const json = JSON.parse(script_data);
+                const apollo_state = json["props"]["pageProps"]["__APOLLO_STATE__"];
+                const root_query = apollo_state["ROOT_QUERY"];
+                const top_work_id = root_query["work({\"id\":\"" + ncode + "\"})"]["__ref"];
+                const top_work = apollo_state[top_work_id];
+                toc.title = top_work["title"];
+                toc.author = apollo_state[top_work["author"]["__ref"]]["activityName"];
+                toc.story = `${top_work["catchphrase"]}\n${top_work["introduction"]}`;
+                let chapter = "";
+                let index = 0;
+                for(const tableOfContent of top_work["tableOfContents"]) {
+                    const subTableOfContents = apollo_state[tableOfContent["__ref"]];
+                    if(subTableOfContents["chapter"]) {
+                        chapter = apollo_state[subTableOfContents["chapter"]["__ref"]]["title"];
+                    }
+                    const episodes = subTableOfContents["episodeUnions"];
+                    if (episodes) {
+                        for(const item of episodes){
+                            ++index;
+                            const episode = apollo_state[item["__ref"]];
+                            toc.subtitles.push(
+                                {
+                                    subtitle: episode["title"],
+                                    href: `/works/${ncode}/episodes/${episode["id"]}`,
+                                    index: index,
+                                    subdate: episode["publishedAt"],
+                                    subupdate: "",
+                                    chapter: chapter,
+                                }
+                            );
+                        }
+                    }
+                }
+            } catch(e) {
+                console.log(e)
             }
         }
         return toc;
-    };
-    const getBody = doc => [...doc.querySelectorAll(".p-novel__body")].map(el => el.outerHTML).join("");
+    }
+    const getBody = doc => [...doc.querySelectorAll(".js-episode-body")].map(el => el.innerHTML).join("");
     const TopUrl = document.location.origin;
     const TOPFOLDERNAME = 'CacheNovels';
     AOZORA_ESCAPE_ENTITIES = {
@@ -104,7 +90,7 @@
             .replaceAozraTagEscape()
             .replace(/<ruby>(.+?)<\/ruby>/ig, (_, p1) => {
                 const ruby_text_arr = [...p1.matchAll(/<rt>(.*?)<\/rt>/ig)].map(m => m[1]);
-                const ruby_base = p1.replace(/<[^>]+>.*?<\/[^>]+>/g, "").replace(/<.+?>/g, "");
+                const ruby_base = p1.replace(/<rb\/?>/,'').replace(/<[^>]+>.*?<\/[^>]+>/g, "").replace(/<.+?>/g, "");
                 return (ruby_text_arr.length === 0)
                     ? ruby_base
                     : `｜${ruby_base}《${ruby_text_arr.join("")}》`;
@@ -277,7 +263,7 @@
         <div id="container" class="NovelListBox">
             <div id="Main" class="NovelListInnerBox">
                 <div class="MainInnerBox">
-                    <button id="Close">×</button><h1>Narou to Aozora Text</h1>
+                    <button id="Close">×</button><h1>Kakuyomu to Aozora Text</h1>
                     <hr>
                     <button id="AddNovel">Add</button>
                     <button id="UpdateNovel">Update</button>
@@ -292,7 +278,7 @@
             </div>
             <div id="NovelAddModal" class="NovelListBox">
                 <div class="NovelListInnerBox">
-                    <p><span id="InputCodeName">ncode</span>を入力してください:</p>
+                    <p><span id="InputCodeName">ID/アドレス</span>を入力してください:</p>
                     <p id="AddError"></p>
                     <input type="text" id="NcodeInput" />
                     <button id="SubmitNcode">登録</button>
@@ -466,19 +452,6 @@
         }
     `;
     shadow.appendChild(style);
-    document.documentElement.style.overflowY = "hidden";
-    const elNovelListBaseStyle = document.getElementById("NovelListBaseStyle");
-    if (elNovelListBaseStyle){
-        elNovelListBaseStyle.parentNode.removeChild(elNovelListBaseStyle);
-    }
-    const baseStyle = document.createElement('style');
-    baseStyle.id = "NovelListBaseStyle";
-    baseStyle.textContent = `
-    ins, #geniee_overlay_outer, .c-ad {
-        display: none !important;
-    }
-    `;
-    document.head.appendChild(baseStyle);
     //
     const NovelList = [];
     const rebuildNovelList = async _ => {
