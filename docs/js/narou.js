@@ -104,7 +104,7 @@
             .replaceAozraTagEscape()
             .replace(/<ruby>(.+?)<\/ruby>/ig, (_, p1) => {
                 const ruby_text_arr = [...p1.matchAll(/<rt>(.*?)<\/rt>/ig)].map(m => m[1]);
-                const ruby_base = p1.replace(/<[^>]+>.*?<\/[^>]+>/g, "").replace(/<.+?>/g, "");
+                const ruby_base = p1.replace(/<rb\/?>/,'').replace(/<[^>]+>.*?<\/[^>]+>/g, "").replace(/<.+?>/g, "");
                 return (ruby_text_arr.length === 0)
                     ? ruby_base
                     : `｜${ruby_base}《${ruby_text_arr.join("")}》`;
@@ -208,7 +208,6 @@
         await writable.close();
     }
     const writeEpisodeFiles = async (basedir, bodyDirHandle, toc) => {
-        let download = false;
         let count = 0;
         for (const item of toc.subtitles) {
             try {
@@ -230,15 +229,13 @@
             item.body = toAozora(page.body);
             item.postscript = toAozora(page.postscript);
             await writeJsonFile(bodyDirHandle, `${item.index}.json`, item);
-            download = true;
             ++count;
-            if (count >= 10) {
+            if (count % 10 === 0) {
                 console.log(`Sleep`);
                 await cancellableSleep(5);
-                count = 0;
             }
         }
-        return download;
+        return count > 0;
     }
     const getTopDirectoryHandle = async (create = true) => {
         const root = await navigator.storage.getDirectory();
@@ -316,23 +313,16 @@
     `;
     const style = document.createElement('style');
     style.textContent = `
-        * {
-            writing-mode: horizontal-tb;
-        }
-        table, input {
-            margin: 2px; border: 1px solid gray; padding: 2px;
-        }
-        #Main {
-            width: 100%; height: 100%;
-        }
+        * { writing-mode: horizontal-tb; }
+        table, input { margin: 2px; border: 1px solid gray; padding: 2px; }
+        #Main { width: 100%; height: 100%; }
         #Close {
             z-index: 12000;
             position: fixed;
             top: 25px; left: 25px;
             width: 20px; height: 20px;
-            background-color: white;
+            background-color: white; color: white;
             border-color: white;
-            color: white;
         }
         #Close::before, #Close::after {
             content: "";
@@ -341,12 +331,8 @@
             width: 3px; height: 15px;
             background: #888;
         }
-        #Close::before {
-            transform: translate(-50%,-50%) rotate(45deg);
-        }
-        #Close::after {
-            transform: translate(-50%,-50%) rotate(-45deg);
-        }
+        #Close::before { transform: translate(-50%,-50%) rotate( 45deg); }
+        #Close::after  { transform: translate(-50%,-50%) rotate(-45deg); }
         .NovelListBox {
             z-index: 11000; 
             position: fixed;
@@ -364,9 +350,7 @@
             border: 1px solid #ccc;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        #LoadingText {
-            white-space: pre-wrap;
-        }
+        #LoadingText { white-space: pre-wrap; }
         .MainInnerBox {
             position: relative;
             width: calc(100% - 40px); height: calc(100% - 40px);
@@ -379,70 +363,42 @@
             margin: 0;
         }
         button {
-            background-color: #5cb85c;
+            background-color: #5cb85c; color: white;
             border-color: #4cae4c;
-            color: white;
             border: 1px solid transparent;
             border-radius: 0.2rem;
             padding: 0.2rem 0.5rem;
             line-height: 1rem;
             margin-right: 0;
         }
-        #AddNovel {
-            background-color: #337ab7;
-            border-color: #2e6da4;
-        }
-        #RemoveNovel {
-            background-color: #d9534f;
-            border-color: #d43f3a;
-        }
-        #ListRefresh {
-            background-color: #5bc0de;
-            border-color: #46b8da;
-        }
-        #NovelAddModal, #NovelRemoveModal, #Loading {
-            display: none;
-        }
-        #NovelError, #AddError {
-            color: red;
-        }
+        #AddNovel    { background-color: #337ab7; border-color: #2e6da4; }
+        #RemoveNovel { background-color: #d9534f; border-color: #d43f3a; }
+        #ListRefresh { background-color: #5bc0de; border-color: #46b8da; }
+        #NovelAddModal, #NovelRemoveModal, #Loading { display: none; }
+        #NovelError, #AddError { color: red; }
         .NovelListBox table {
             border-collapse: collapse;
             color: #333;
             border-color: #dad3c8;
         }
-        .NovelListBox thead {
-            background-color: #605555;
-            color: #ddd0cc;
-        }
-        .NovelListBox tbody tr {
-            background-color: #f8f3e5;
-        }
-        .NovelListBox tbody tr:nth-child(even) {
-            background-color: #fffcef;
-        }
-        .NovelListBox th {
-            white-space: nowrap;
-        }
+        .NovelListBox thead { color: #ddd0cc; background-color: #605555; }
+        .NovelListBox tbody tr                 { background-color: #f8f3e5; }
+        .NovelListBox tbody tr:nth-child(even) { background-color: #fffcef; }
+        .NovelListBox th { white-space: nowrap; }
         .NovelListBox th,.NovelListBox td {
             border: solid 1px; 
             border-color: #dad3c8;
             padding: 10px;
         }
-        .NovelListBox td:nth-child(n+4) {
-            min-width: 30rem;
-        }
-        .NovelListBox td:nth-child(n+5) {
-            min-width: 15rem;
-        }
+        .NovelListBox th:nth-child(n+4) { min-width: 30rem; }
+        .NovelListBox th:nth-child(n+5) { min-width: 15rem; }
         a, a:visited {
             color: #03c;
             text-decoration: none;
         }
         .NovelListUpdateInfo {
-            background-color: #1f883d;
+            background-color: #1f883d; color: white;
             border-color: transparent;
-            color: white;
             border-radius: 0.3rem;
             padding-left: 0.3rem; padding-right: 0.3rem;
             display: none;
@@ -568,6 +524,11 @@
     shadow.querySelector("#Loading .spinner").addEventListener("dblclick", cancelLoading);
     const elLoading = shadow.getElementById("Loading");
     const elLoadingText = shadow.getElementById("LoadingText");
+    const closeModel = (e, target) => {
+        if (e.target === target){
+            target.style.display = "none";
+        }
+    };
     // 閉じる処理
     const elModalNovelList = shadow.getElementById("container");
     shadow.getElementById("Close").addEventListener("click", e => {
@@ -588,11 +549,7 @@
         }
         elInput.focus();
     });
-    elModalAdd.addEventListener("click", e => {
-        if (e.target === elModalAdd) {
-            elModalAdd.style.display = "none";
-        }
-    });
+    elModalAdd.addEventListener("click", e => { closeModel(e, elModalAdd); });
     shadow.getElementById("CancelNcode").addEventListener("click", _ => elModalAdd.style.display = "none");
     shadow.getElementById("SubmitNcode").addEventListener("click", async _ => {
         const ncode = elInput.value.trim();
@@ -642,7 +599,7 @@
                     await cancellableSleep(5);
                     await downloadNovel(toc, ncode);
                 }
-            };
+            }
         } catch(error){
             setErrorMessage(isAbortError(error)
                 ? `処理を中断しました。`
@@ -660,11 +617,7 @@
             setErrorMessage(`削除する小説を選択してください。`);
         }
     });
-    elModelRemove.addEventListener("click", e => {
-        if (e.target === elModelRemove) {
-            elModelRemove.style.display = "none";
-        }
-    });
+    elModelRemove.addEventListener("click", e => { closeModel(e, elModelRemove); });
     shadow.getElementById("CancelRemove").addEventListener("click", _ => elModelRemove.style.display = "none");
     shadow.getElementById("SubmitRemove").addEventListener("click", async _ => {
         clearErrorMessage();
@@ -696,10 +649,9 @@
     //
     const elListBulkSelect = shadow.getElementById("ListBulkSelect");
     elListBulkSelect.addEventListener("click", _ => {
-        shadow.querySelectorAll(".NovelListItem").forEach(item => {
-            const elUpdate = item.querySelector(".NovelListNcode");
+        for(const elUpdate of shadow.querySelectorAll(".NovelListItem .NovelListNcode")){
             elUpdate.checked = elListBulkSelect.checked;
-        });
+        }
     });
     refreshNovelList();
 })();
