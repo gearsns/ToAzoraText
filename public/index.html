@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>to 青空文庫テキスト Bookmarklet</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #fafafa; --fg: #222; --muted: #666; --card: #fff; --border: #ddd; --accent: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #16181d; --fg: #e8e8e8; --muted: #9aa0a6; --card: #1f2229; --border: #343841; --accent: #6ea0ff; }
+    }
+    body { margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+      font: 16px/1.7 system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; }
+    main { max-width: 44rem; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+    p, li { color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .card h2 { font-size: 1.1rem; margin: 0 0 .75rem; color: var(--fg); }
+    .drag { display: inline-block; padding: .45rem .9rem; border-radius: 6px; background: var(--accent); color: #fff;
+      text-decoration: none; font-weight: 600; cursor: grab; }
+    textarea { width: 100%; box-sizing: border-box; margin-top: .75rem; padding: .5rem; height: 5.5rem; resize: vertical;
+      font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 6px; }
+    button { margin-top: .5rem; padding: .4rem 1rem; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--card); color: var(--fg); cursor: pointer; font: inherit; }
+    button:hover { border-color: var(--accent); }
+    code { background: var(--bg); padding: .1rem .35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>to 青空文庫テキスト Bookmarklet</h1>
+  <p>小説を青空文庫形式のテキストとして取得するブックマークレットです。使いたいサイトのものを登録してください。</p>
+  <ol>
+    <li>下のリンクをブックマークバーへドラッグ、または「コピー」したURLをブックマークのURL欄に貼り付けて登録</li>
+    <li>対象サイトの小説ページでそのブックマークを開く</li>
+  </ol>
+
+  <div id="sites"></div>
+
+  <p>ブックマークレット本体は <code id="origin"></code> から毎回読み込むため、更新後も再登録は不要です。</p>
+</main>
+
+<script>
+  // サイトを追加したらここにも1行足す (file は dist/ に出力される <site>.js)
+  const SITES = [
+    { file: "narou.js", label: "小説家になろう", hint: "ncode.syosetu.com" },
+    { file: "kakuyomu.js", label: "カクヨム", hint: "kakuyomu.jp" },
+    { file: "pixiv.js", label: "pixiv (小説)", hint: "www.pixiv.net" },
+  ];
+
+  // このページ自身のURL (= デプロイ先) を基準にスクリプトのURLを決める
+  const base = new URL("./", location.href);
+  document.getElementById("origin").textContent = base.href;
+
+  const makeBookmarklet = (file) => {
+    const src = new URL(file, base).href;
+    // 毎回最新を取るため ?t= を付ける。読み込めなかった場合(CSP等)はalertで通知する。URLを壊さないよう ASCII のみ・% 無しにしている
+    return (
+      "javascript:(function(){var s=document.createElement('script');" +
+      "s.src='" + src + "?t='+Date.now();" +
+      "s.onerror=function(){alert('ToAzoraText: failed to load script')};" +
+      "document.documentElement.appendChild(s)})()"
+    );
+  };
+
+  const copy = async (text, textarea) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      textarea.select();
+      document.execCommand("copy");
+    }
+  };
+
+  const root = document.getElementById("sites");
+  for (const site of SITES) {
+    const href = makeBookmarklet(site.file);
+
+    const card = document.createElement("section");
+    card.className = "card";
+
+    const h2 = document.createElement("h2");
+    h2.textContent = `${site.label} (${site.hint})`;
+
+    const link = document.createElement("a");
+    link.className = "drag";
+    link.href = href;
+    link.textContent = `ToAzoraText ${site.label}`;
+    link.title = "ブックマークバーへドラッグ";
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      alert("クリックではなく、ブックマークバーへドラッグして登録してください");
+    });
+
+    const ta = document.createElement("textarea");
+    ta.readOnly = true;
+    ta.value = href;
+    ta.addEventListener("focus", () => ta.select());
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "URLをコピー";
+    btn.addEventListener("click", async () => {
+      await copy(href, ta);
+      btn.textContent = "コピーしました";
+      setTimeout(() => (btn.textContent = "URLをコピー"), 1500);
+    });
+
+    card.append(h2, link, ta, btn);
+    root.append(card);
+  }
+</script>
+</body>
+</html>
