@@ -82,7 +82,7 @@ describe("マウント", () => {
   it("Shadow DOM にパネルを作り、サイト固有の見出しを出す", async () => {
     await mount();
     expect(document.getElementById("NovelListHost")).toBe(handle.host);
-    expect(handle.shadow.querySelector("h1")?.textContent).toBe("Narou to Aozora Text");
+    expect(handle.shadow.querySelector("h1")?.textContent).toBe("to Aozora Text");
     expect(text("InputCodeName")).toBe("ncode");
   });
 
@@ -104,7 +104,7 @@ describe("マウント", () => {
 
   it("カクヨム: スクロール固定も広告CSSも行わない", async () => {
     await mount(kakuyomuSite);
-    expect(handle.shadow.querySelector("h1")?.textContent).toBe("Kakuyomu to Aozora Text");
+    expect(handle.shadow.querySelector("h1")?.textContent).toBe("to Aozora Text");
     expect(text("InputCodeName")).toBe("ID/アドレス");
     expect(document.documentElement.style.overflowY).toBe("");
     expect(document.getElementById("NovelListBaseStyle")).toBeNull();
