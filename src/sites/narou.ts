@@ -93,7 +93,7 @@ const createToc = async ({ basedir, code, fetchDocument, sleep }: TocContext): P
 
 export const narouSite: HtmlSiteAdapter = {
   id: "narou",
-  appTitle: "Narou to Aozora Text",
+  appTitle: "to Aozora Text",
   codeLabel: "ncode",
   allowedOrigins: ["https://ncode.syosetu.com", "https://novel18.syosetu.com"],
   lockPageScroll: true,

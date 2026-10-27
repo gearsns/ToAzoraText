@@ -71,7 +71,7 @@ const createToc = async ({ basedir, code, fetchDocument }: TocContext): Promise<
 
 export const kakuyomuSite: HtmlSiteAdapter = {
   id: "kakuyomu",
-  appTitle: "Kakuyomu to Aozora Text",
+  appTitle: "to Aozora Text",
   codeLabel: "ID/アドレス",
   allowedOrigins: ["https://kakuyomu.jp"],
   lockPageScroll: false,

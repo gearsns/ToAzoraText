@@ -188,7 +188,7 @@ const createToc = async (context: TocContext): Promise<Toc> => {
 
 export const pixivSite: ApiSiteAdapter = {
   id: "pixiv",
-  appTitle: "pixiv to Aozora Text",
+  appTitle: "to Aozora Text",
   codeLabel: "series-シリーズID / novel-作品ID",
   allowedOrigins: ["https://www.pixiv.net"],
   lockPageScroll: false,
