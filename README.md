@@ -84,48 +84,6 @@ npm run build
 `index.html` は自分自身の URL を基準にブックマークレットを生成するので、リポジトリ名の変更やカスタムドメインにもそのまま追従します。
 本体は毎回公開先から読み込まれるため、**更新してもブックマークの再登録は不要**です。
 
-### GitHub Actions で自動デプロイする場合
-
-1. リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にする
-2. `.github/workflows/deploy.yml` を作成する (例)
-
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
 ## ブックマークレットの登録
 
 1. 公開先の `index.html` を開く
